@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Customize Budget
+{% endblock %}
+
+{% block main %}
+
+
+<h1 class="h1">Customize Your Budget</h1>
+
+<form method="POST">
+    <h2 class="h2">What day of the month do you want to budget?</h2>
+    <input name="day" placeholder="Day" type="text">
+    <input type="hidden" name="id" value="{{ id }}">
+
+    <h2 class="h2">Income</h2>
+
+    <script>
+        // Dynamically add and remove rows
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="hidden" name="in_id[]" value="{{ id }}"><input type="text" name="in_type[]" id="childin_type" placeholder="Income Type" /><input type="text" name="in_amount[]" id="childin_amount" placeholder="Expected Amount" /><input type="date" name="in_date[]" id="childin_date" placeholder="Date" /><input type="button" id="in_remove" value="X" /></div>';
+
+            // Add rows to form
+            $("#in_add").click(function () {
+                $("#income").append(newrow);
+            });
+
+            // Remove rows from form
+            $("#income").on("click", "#in_remove", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="income">
+        <input type="hidden" name="in_id[]" value="{{ id }}">
+        <input type="text" name="in_type[]" id="in_type" placeholder="Income Type" />
+        <input type="text" name="in_amount[]" id="in_amount" placeholder="Expected Amount" />
+        <input type="date" name="in_date[]" id="in_date" placeholder="Date" />
+        <input type="button" id="in_add" value="Add More" />
+    </div>
+
+    <h2 class="h2">Expenses</h2>
+
+    <script>
+        // Dynamically add and remove category text boxes
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="text" name="expense[]" id="childexpense" placeholder="Expense Category" /><input type="text" name="expense_amount[]" id="childexpense_amount" placeholder="Budgeted Amount" /><input type="button" id="remove_cat" value="X" /></div>';
+
+            // Add rows to form
+            $("#add_cat").click(function () {
+                $("#category").append(newrow);
+            });
+
+            // Remove rows from form
+            $("#category").on("click", "#remove_cat", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="category">
+        <input type="text" name="expense[]" id="expense" placeholder="Expense Catagory" />
+        <input type="text" name="expense_amount[]" id="expense_amount" placeholder="Budgeted Amount" />
+        <input type="button" id="add_cat" value="Add More" />
+    </div>
+
+    <h2 class="h2">Monthly Bills</h2>
+
+    <script>
+        // Dynamically add and remove bills text boxes
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="text" name="expense[]" id="childexpense" placeholder="Bill" /><input type="text" name="expense_amount[]" id="childexpense_amount" placeholder="Expected Amount" /><input type="date" name="expense_due[]" id="childexpense_due" placeholder="Due Date" /><input type="button" id="remove_bill" value="X" /></div>';
+
+            // Add row to form
+            $("#add_bill").click(function () {
+                $("#bills").append(newrow);
+            });
+
+            // Remove row from form
+            $("#bills").on("click", "#remove_bill", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="bills">
+        <input type="text" name="expense[]" id="expense" placeholder="Bill" />
+        <input type="text" name="expense_amount[]" id="expense_amount" placeholder="Expected Amount" />
+        <input type="date" name="expense_due[]" id="expense_due" placeholder="Due Date" />
+        <input type="button" id="add_bill" value="Add More" />
+    </div>
+
+    <input type="submit" name="submit" value="Submit" />
+</form>
+
+{% endblock %}

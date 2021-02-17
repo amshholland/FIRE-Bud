@@ -1,0 +1,121 @@
+
+    $id = $_POST["id"];
+    $ex = "expense";
+    $in = "income";
+
+
+
+    $in_type = real_escape_string($conn, $_POST["in_type"]);
+    $in_amount = real_escape_string($conn, $_POST["in_amount"]);
+    $in_date = real_escape_string($conn, $_POST["in_date"];
+
+    ---------PHP DB Entry attempt
+
+    <! --- MySQLi Procedural --- !>
+
+<?php 
+
+// connect to the database
+$conn = mysqli_connect('127.0.0.1','root', 'budget');
+
+// check connection
+if(!$conn){
+    echo 'Connection error: '. mysqli_connect_error();
+}
+
+$day = '';
+$errors = array('day' => '');
+
+if(isset($_POST['submit'])){
+    // Check for budget day
+    if(empty($_POST['day'])){
+        $errors['day'] = "Please provide which day of the month you'd like to set your budget day as.";
+    }else{
+        $day = $_POST['day'];
+    }
+
+    if(array_filter($errors)){
+        // Echo 'errors in form';
+    }else{
+        
+        $day = mysqli_real_escape_string($conn, $_POST['day']);
+        $id = mysqli_real_escape_string($conn, $_POST['id']);
+
+        // Create sql
+        $sql = "UPDATE users SET budget_day = ('$day') WHERE id = ('$id')";
+
+        // Save to db & check
+        if(mysqli_query($conn, $sql)){
+            // Success
+        }else{
+            // Error
+            echo 'query error: '. mysqli_error($conn);
+        }
+    }
+}
+?>
+
+-------
+
+<?php
+
+// Placeholder
+$output = NULL;
+
+if(isset($_POST['submit'])){
+    // Connect to db
+    $mysqli = NEW MySQLi('127.0.0.1','root', 'budget');
+    $in_id = $_POST['in_id'];
+    $income = "income";
+    $in_type = $_POST['in_type'];
+    $in_amount = $_POST['in_amount'];
+    $in_date = $_POST['in_date'];
+
+    foreach($in_id as $key => $value){
+        $query = "SELECT * FROM budget 
+                  WHERE in_id = '" . $mysqli->real_escape_string($key['in_id']) . "'";
+    
+        $resultSet = $mysqli->query($query);
+
+        if($resultSet->num_rows == 0){
+            // Perform insert
+        }else{
+            $output .= "You've already set your budget day." . $mysqli->error;
+        }
+            
+    }
+    $mysqli->close();
+}
+
+?>
+
+-----------
+<?php
+
+$conn = mysqli_connect($host='localhost', $user='root', $port='3306', $database='budget');
+
+	if(isset($_POST['submit'])){
+
+        // escape sql chars
+        $day = mysqli_real_escape_string($conn, $_POST['day']);
+        $in_id = mysqli_real_escape_string($conn, $_POST['in_id']);
+        $in_type = mysqli_real_escape_string($conn, $_POST['in_type']);
+        $in_amount = mysqli_real_escape_string($conn, $_POST['in_amount']);
+        $in_date = mysqli_real_escape_string($conn, $_POST['in_date']);
+        $in = 'income';
+
+        // create sql
+        $sql = "INSERT INTO budget(id,ie,category,amount,date) 
+                VALUES('$in_id','$in','$in_type','$in_amount','$in_date')";
+
+        // save to db and check
+        if(mysqli_query($conn, $sql)){
+            // success
+            header('Location: index.html');
+        } else {
+            echo 'query error: '. mysqli_error($conn);
+        }
+    }
+ // end POST check
+?>
+    
