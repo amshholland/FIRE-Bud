@@ -41,7 +41,7 @@ Session(app)
 # Configure mysql to use SQLite database
 try:
     conn = mariadb.connect(
-        user='root', host='localhost', port=3306, database="budget")
+        user='root', password='123', host='localhost', port=3306, database='budget')
     cursor = conn.cursor()
 except mariadb.Error as e:
     print("Error connecting to MariaDB Platform: {e}")
@@ -52,7 +52,6 @@ except mariadb.Error as e:
 @ login_required
 def index():
     """Show overview of budget"""
-    test = "test"
 
     return render_template("index.html")
 
@@ -152,41 +151,12 @@ def register():
         return render_template("register.html")
 
 
-@ app.route("/customize", methods=["GET", "POST"])
-@ login_required
+@ app.route("/customize")
 def customize():
     """Customize budget"""
 
-    id = session["user_id"]
-
-    if request.method == "POST":
-
-        day = request.form.get('day')
-        update = cursor.execute(
-            "UPDATE users SET budget_day = ? WHERE id = ?", (day, id))
-
-        income = "income"
-        in_type = request.form.get('in_type')
-        in_amount = request.form.get('in_amount')
-        in_date = request.form.get('in_date')
-
-        income_insert = cursor.execute(
-            "INSERT INTO budget_tbl (id, ie, category, amount, date) VALUES (?, ?, ?, ?, ?)", (id, income, in_type, in_amount, in_date))
-        conn.commit(update, income_insert)
-
-        return render_template("index.php")
-
-    else:
-        # Direct user to customize page
-        return render_template("customize.php", id=id)
-
-
-@ app.route("/test")
-def customized():
-    """Customize budget"""
-
-    # Direct user to customize page
-    return render_template("test.php")
+    # Direct user to customize.html page
+    return render_template("customize.html")
 
 
 @ app.route("/add", methods=["GET", "POST"])
