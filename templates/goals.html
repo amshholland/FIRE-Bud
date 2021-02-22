@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Goals
+{% endblock %}
+
+{% block main %}
+
+<script src="dynamic.js"></script>
+
+<form name="myform" action="/goals" method="post" enctype="multipart/form-data">
+    <input name="goals" type="text" placeholder="Goals">
+
+<input id="add_button" type="button" value="Add Goals" onclick="addForm()" />
+
+<br /><br />
+
+<div id="uploadControls"></div>
+
+<br/>
+
+<input type="submit" value="Submit" name="action">
+
+</form>
+
+{% endblock %}
