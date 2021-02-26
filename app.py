@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 from tempfile import mkdtemp
-import mariadb
+import mysql.connector
 
 from flask import (Flask, flash, jsonify, redirect, render_template, request,
                    session)
@@ -23,7 +23,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 @app.after_request
 def after_request(response):
-    ## response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    # response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
@@ -40,11 +40,12 @@ Session(app)
 
 # Configure mysql to use SQLite database
 try:
-    conn = mariadb.connect(
+    conn = mysql.connector.connect(
         user='root', password='', host='localhost', port=3306, database='budget')
     cursor = conn.cursor()
-except mariadb.Error as e:
-    print("Error connecting to MariaDB Platform: {e}")
+
+except mysql.connector.Error as e:
+    print("Error connecting to SQL Platform: {e}")
     sys.exit(1)
 
 
@@ -61,7 +62,7 @@ def login():
     """Log user in"""
 
     # Forget any user_id
-    session.clear()
+    # session.clear()
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
@@ -76,7 +77,7 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         rows = cursor.fetchall()
 
         # Ensure username exists and password is correct
@@ -87,7 +88,7 @@ def login():
         session["user_id"] = rows[0][0]
 
         # Redirect user to home page
-        return redirect("/")
+        return redirect("/customize")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -129,7 +130,7 @@ def register():
 
         # Check to see if username already exists
         cursor.execute(
-            "SELECT * FROM users WHERE username = ?", (username,))
+            "SELECT * FROM users WHERE username = %s", (username,))
         rows = cursor.fetchall()
 
         # Ensure username exists and password is correct
@@ -139,8 +140,8 @@ def register():
             # Hash password
             hash = generate_password_hash(password)
 
-            insert = cursor.execute("""INSERT INTO users (username, hash) 
-                                    VALUES (?, ?)""", (username, hash))
+            cursor.execute("""INSERT INTO users (username, hash)
+                                    VALUES (%s, %s)""", (username, hash))
             conn.commit()
 
         # Direct user to login page
@@ -151,20 +152,30 @@ def register():
         return render_template("register.html")
 
 
-@ app.route("/project/templates/customize.php")
+@ app.route("/customize", methods=["GET", "POST"])
 @ login_required
 def customize():
     """Customize budget"""
     id = session["user_id"]
-    # Direct user to customize.html page
-    return render_template("customize.php", id=id)
 
+    cursor.execute("SELECT budget_day FROM users WHERE id = %s", (id,))
+    bud_day = cursor.fetchone()
 
-@ app.route("/customized", methods=["POST"])
-@ app.route("/project/templates/customized.php", methods=["GET", "POST"])
-def customized():
-    """Customize budget"""
-    return ("ok")
+    if request.method == "POST":
+
+        for ie, category, amount, date in zip(request.form.getlist('ie'),
+                                              request.form.getlist('category'),
+                                              request.form.getlist(
+                'amount'),
+                request.form.getlist('date')):
+            cursor.execute("""INSERT INTO budget (id, ie, category, amount, date)
+            VALUES (%s,%s,%s,%s, %s)""", (id, ie, category, amount, date))
+            conn.commit()
+
+        return render_template("index.html")
+
+    else:
+        return render_template("customize.html", bud_day=bud_day[0])
 
 
 @ app.route("/add", methods=["GET", "POST"])

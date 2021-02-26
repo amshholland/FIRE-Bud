@@ -1,11 +1,15 @@
-<?php 
+<?php
 
-	// connect to the database
-    $conn = mysqli_connect($user='root', $host='localhost', $port='3306', $database='budget');
+$hostname = '127.0.0.1:3306';
+$username = 'root';
+$database = 'budget';
+$pw = '';
 
-	// check connection
-	if(!$conn){
-		echo 'Connection error: '. mysqli_connect_error();
-	}
+// connect to the database
+$conn = mysqli_connect($hostname, $username, $pw, $database);
 
-?>
+// check connection
+if (!$conn) {
+	echo ("Connect failed: %s\n" . mysqli_connect_error());
+	exit();
+}

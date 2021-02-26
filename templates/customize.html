@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Customize Budget
+{% endblock %}
+
+{% block main %}
+
+<h1 class="h1">Customize Your Budget</h1>
+
+<form method="POST" action="/customize">
+    {% if bud_day != null or bud_day != None or bud_day != 0 %}
+
+    <h2 class="h2">Your next budget day is on the {{ bud_day }}</h2>
+
+    {% else %}
+
+    <h2 class="h2">What day of the month do you want to budget?</h2>
+    <input name="day" placeholder="Day" type="text">
+
+    {% endif %}
+
+    <h2 class="h2">Income</h2>
+
+    <script>
+        // Dynamically add and remove rows
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="income" /><input type="text" name="category" id="childcategory" placeholder="Income Type" /><input type="text" name="amount" id="childamount" placeholder="Expected Amount" /><input type="date" name="in_date" id="childin_date" /><input type="button" id="in_remove" value="X" /></div>';
+            // Add rows to form
+            $("#in_add").click(function () {
+                $("#income").append(newrow);
+            });
+
+            // Remove rows from form
+            $("#income").on("click", "#in_remove", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="income">
+        <input type="hidden" name="ie" id="ie" value="income" />
+        <input type="text" name="category" id="category" placeholder="Income Type" />
+        <input type="text" name="amount" id="amount" placeholder="Expected Amount" />
+        <input type="date" name="date" id="date" />
+        <input type="button" id="in_add" value="Add More" />
+    </div>
+
+    <h2 class="h2">Expenses</h2>
+    <script>
+        // Dynamically add and remove category text boxes
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Expense Category" /><input type="text" name="amount" id="childamount" placeholder="Budget" /><input type="hidden" name="date" id="childdate" /><input type="button" id="ex_remove" value="X" /></div>';
+
+            // Add rows to form
+            $("#ex_add").click(function () {
+                $("#expenses").append(newrow);
+            });
+
+            // Remove rows from form
+            $("#expenses").on("click", "#ex_remove", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="expenses">
+        <input type="hidden" name="ie" id="ie" value="expense" />
+        <input type="text" name="category" id="category" placeholder="Expense Category" />
+        <input type="text" name="amount" id="amount" placeholder="Budget" />
+        <input type="hidden" name="date" id="date" />
+        <input type="button" id="ex_add" value="Add More" />
+    </div>
+
+    <h2 class="h2">Monthly Bills</h2>
+
+    <script>
+        // Dynamically add and remove bills text boxes
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Bill" /><input type="text" name="amount" id="childamount" placeholder="Estimated Bill Total" /><input type="date" name="date" id="childdate" placeholder="Payment Due" /><input type="button" id="bill_remove" value="X" /></div>';
+
+            // Add row to form
+            $("#bill_add").click(function () {
+                $("#bills").append(newrow);
+            });
+
+            // Remove row from form
+            $("#bills").on("click", "#bill_remove", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <div id="bills">
+        <input type="hidden" name="ie" id="ie" value="expense" />
+        <input type="text" name="category" id="category" placeholder="Bill Name" />
+        <input type="text" name="amount" id="amount" placeholder="Estimated Total" />
+        <input type="date" name="date" id="date" placeholder="Payment Due" />
+        <input type="button" id="bill_add" value="Add More" />
+    </div>
+    <input type="submit" />
+
+</form>
+
+{% endblock %}
