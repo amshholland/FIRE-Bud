@@ -1,7 +1,9 @@
 import sys
-from datetime import datetime
+import datetime
 from tempfile import mkdtemp
 import mysql.connector
+from dateutil.relativedelta import relativedelta
+
 
 from flask import (Flask, flash, jsonify, redirect, render_template, request,
                    session)
@@ -43,7 +45,6 @@ try:
     conn = mysql.connector.connect(
         user='root', password='', host='localhost', port=3306, database='budget')
     cursor = conn.cursor()
-
 except mysql.connector.Error as e:
     print("Error connecting to SQL Platform: {e}")
     sys.exit(1)
@@ -88,7 +89,7 @@ def login():
         session["user_id"] = rows[0][0]
 
         # Redirect user to home page
-        return redirect("/customize")
+        return redirect("/add")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -158,32 +159,66 @@ def customize():
     """Customize budget"""
     id = session["user_id"]
 
+    today = datetime.date.today()
+
     cursor.execute("SELECT budget_day FROM users WHERE id = %s", (id,))
     bud_day = cursor.fetchone()
+    bud_day = datetime.date(today.year, today.month, bud_day[0])
+
+    if today > bud_day:
+        bud_day = bud_day + relativedelta(months=+1)
 
     if request.method == "POST":
+        # Insert form data into budget db
 
         for ie, category, amount, date in zip(request.form.getlist('ie'),
                                               request.form.getlist('category'),
-                                              request.form.getlist(
-                'amount'),
-                request.form.getlist('date')):
-            cursor.execute("""INSERT INTO budget (id, ie, category, amount, date)
-            VALUES (%s,%s,%s,%s, %s)""", (id, ie, category, amount, date))
-            conn.commit()
+                                              request.form.getlist('amount'),
+                                              request.form.getlist('date')):
+            if category and amount and date:
+                cursor.execute("""INSERT INTO categories (id, ie, category, amount, date)
+                VALUES (%s,%s,%s,%s,%s)""", (id, ie, category, amount, date))
+                conn.commit()
 
         return render_template("index.html")
 
     else:
-        return render_template("customize.html", bud_day=bud_day[0])
+        return render_template("customize.html", bud_day=bud_day)
 
 
 @ app.route("/add", methods=["GET", "POST"])
 @ login_required
 def add():
     """Add to budget"""
+    id = session["user_id"]
 
-    return render_template("register.html")
+    today = datetime.date.today()
+
+    cursor.execute(
+        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "expense"))
+    expenses = cursor.fetchall()
+
+    cursor.execute(
+        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "income"))
+    incomes = cursor.fetchall()
+
+    cursor.execute(
+        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "bill"))
+    bills = cursor.fetchall()
+
+    if request.method == "POST":
+        for ie, category, amount, date in zip(request.form.getlist('ie'),
+                                              request.form.getlist('category'),
+                                              request.form.getlist('amount'),
+                                              request.form.getlist('date')):
+            if category and amount and date:
+                cursor.execute("""INSERT INTO budget (id, ie, category, amount, date)
+                    VALUES (%s,%s,%s,%s,%s)""", (id, ie, category, amount, date))
+                conn.commit()
+        return render_template("index.html")
+
+    else:
+        return render_template("add.html", expenses=expenses, incomes=incomes, bills=bills)
 
 
 @ app.route("/budget", methods=["GET", "POST"])

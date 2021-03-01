@@ -52,7 +52,7 @@ Customize Budget
         // Dynamically add and remove category text boxes
         $(document).ready(function () {
             // Variables
-            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Expense Category" /><input type="text" name="amount" id="childamount" placeholder="Budget" /><input type="hidden" name="date" id="childdate" /><input type="button" id="ex_remove" value="X" /></div>';
+            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Expense Category" /><input type="text" name="amount" id="childamount" placeholder="Budget" /><input type="hidden" name="date" id="childdate" value="{{ bud_day }}" /><input type="button" id="ex_remove" value="X" /></div>';
 
             // Add rows to form
             $("#ex_add").click(function () {
@@ -70,7 +70,7 @@ Customize Budget
         <input type="hidden" name="ie" id="ie" value="expense" />
         <input type="text" name="category" id="category" placeholder="Expense Category" />
         <input type="text" name="amount" id="amount" placeholder="Budget" />
-        <input type="hidden" name="date" id="date" />
+        <input type="hidden" name="date" id="date" value="{{ bud_day }}" />
         <input type="button" id="ex_add" value="Add More" />
     </div>
 
@@ -80,7 +80,7 @@ Customize Budget
         // Dynamically add and remove bills text boxes
         $(document).ready(function () {
             // Variables
-            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Bill" /><input type="text" name="amount" id="childamount" placeholder="Estimated Bill Total" /><input type="date" name="date" id="childdate" placeholder="Payment Due" /><input type="button" id="bill_remove" value="X" /></div>';
+            var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="bill" /><input type="text" name="category" id="childcategory" placeholder="Bill" /><input type="text" name="amount" id="childamount" placeholder="Estimated Bill Total" /><input type="date" name="date" id="childdate" placeholder="Payment Due" /><input type="button" id="bill_remove" value="X" /></div>';
 
             // Add row to form
             $("#bill_add").click(function () {
@@ -95,7 +95,7 @@ Customize Budget
     </script>
 
     <div id="bills">
-        <input type="hidden" name="ie" id="ie" value="expense" />
+        <input type="hidden" name="ie" id="ie" value="bill" />
         <input type="text" name="category" id="category" placeholder="Bill Name" />
         <input type="text" name="amount" id="amount" placeholder="Estimated Total" />
         <input type="date" name="date" id="date" placeholder="Payment Due" />
