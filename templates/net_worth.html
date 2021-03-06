@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Debts, Savings, & Investments
+{% endblock %}
+
+{% block main %}
+
+<h1>Debts, Savings, & Investments</h1>
+<div class="tbl_border">
+    <div class="row align-items-start">
+        <div class="col">
+            <h2>Debts</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Account</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Interest Rate</th>
+                    </tr>
+                </thead>
+
+                {% for row in debts %}
+                <tr>
+                    <td> {{ row[0] }} </td>
+                    <td> {{ row[1] }} </td>
+                    <td> {{ row[2] }} </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="col">
+            <h2>Savings</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Account</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Interest Rate</th>
+                    </tr>
+                </thead>
+
+                {% for row in savings %}
+                <tr>
+                    <td> {{ row[0] }} </td>
+                    <td> {{ row[1] }} </td>
+                    <td> {{ row[2] }} </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="col">
+            <table class="table table-striped">
+                <h2>Investments</h2>
+                <thead>
+                    <tr>
+                        <th scope="col">Account</th>
+                        <th scope="col">Amount</th>
+                    </tr>
+                </thead>
+                {% for row in investments %}
+                <tr>
+                    <td> {{ row[0] }} </td>
+                    <td> {{ row[1] }} </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+
+</p>
+<h2>Add to Debts, Savings, or Investments</h2>
+</p>
+<div>
+    <script>
+        // Dynamically add and remove rows
+        $(document).ready(function () {
+            // Variables
+            var newrow = '<p /><div><select id="dsi" name="childdsi"><option select>Type</option><option>Debt</option><option>Savings Account</option><option>Investment Account</option></select><input type="text" name="childname" id="name" placeholder="Account Name" /><input type="text" name="childamount" id="amount" placeholder="Amount" /><input type="text" name="childrate" id="rate" placeholder="Interest Rate" /><input type="button" id="remove" value="X" /></div>';
+            // Add rows to form
+            $("#add").click(function () {
+                $("#dsi_add").append(newrow);
+            });
+
+            // Remove rows from form
+            $("#dsi_add").on("click", "#remove", function () {
+                $(this).parent("div").remove();
+            });
+        });
+    </script>
+
+    <form method="POST" action="/net_worth">
+        <div id="dsi_add" class="tbl_border">
+            </p>
+            <select id="dsi" name="dsi">
+                <option select>Type</option>
+                <option>Debt</option>
+                <option>Savings Account</option>
+                <option>Investment Account</option>
+            </select>
+            <input type="text" name="name" id="name" placeholder="Account Name" />
+            <input type="text" name="amount" id="amount" placeholder="Amount" />
+            <input type="text" name="rate" id="rate" placeholder="Interest Rate" />
+            <input type="button" id="add" value="Add" />
+            </p>
+        </div>
+        </p>
+        <input type="submit" value="Submit" />
+    </form>
+</div>
+
+{% endblock %}

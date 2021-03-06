@@ -45,3 +45,18 @@ main img
     /* constrain images on small screens */
     max-width: 100%;
 }
+
+.tbl_border
+{
+    border:1px solid black;
+}
+
+.money
+{
+
+}
+
+.interest
+{
+
+}

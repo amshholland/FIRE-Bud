@@ -1,7 +1,10 @@
-import sys
+import gviz_api
+import json
 import datetime
+from decimal import Decimal
 from tempfile import mkdtemp
 import mysql.connector
+import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 
@@ -32,7 +35,7 @@ def after_request(response):
 
 
 # Custom filter
-# app.jinja_env.filters["usd"] = usd
+app.jinja_env.filters["usd"] = usd
 
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_FILE_DIR"] = mkdtemp()
@@ -50,12 +53,24 @@ except mysql.connector.Error as e:
     sys.exit(1)
 
 
-@ app.route("/")
+class CustomJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(CustomJsonEncoder, self).default(obj)
+
+
+@app.route('/')
 @ login_required
 def index():
-    """Show overview of budget"""
+    """ Display MTD Budget Data"""
+    id = session["user_id"]
+    cursor.execute("""SELECT category, SUM(amount)
+    FROM budget WHERE id = %s AND ie = %s GROUP BY category""", (id, "expense"))
+    expenses = cursor.fetchall()
 
-    return render_template("index.html")
+    # Put the JS code and JSON string into the template.
+    return render_template("index.html", expenses=expenses)
 
 
 @ app.route("/login", methods=["GET", "POST"])
@@ -89,7 +104,7 @@ def login():
         session["user_id"] = rows[0][0]
 
         # Redirect user to home page
-        return redirect("/add")
+        return redirect("/")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -192,20 +207,6 @@ def add():
     """Add to budget"""
     id = session["user_id"]
 
-    today = datetime.date.today()
-
-    cursor.execute(
-        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "expense"))
-    expenses = cursor.fetchall()
-
-    cursor.execute(
-        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "income"))
-    incomes = cursor.fetchall()
-
-    cursor.execute(
-        "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "bill"))
-    bills = cursor.fetchall()
-
     if request.method == "POST":
         for ie, category, amount, date in zip(request.form.getlist('ie'),
                                               request.form.getlist('category'),
@@ -218,23 +219,71 @@ def add():
         return render_template("index.html")
 
     else:
+
+        today = datetime.date.today()
+
+        cursor.execute(
+            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "expense"))
+        expenses = cursor.fetchall()
+
+        cursor.execute(
+            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "income"))
+        incomes = cursor.fetchall()
+
+        cursor.execute(
+            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "bill"))
+        bills = cursor.fetchall()
+
         return render_template("add.html", expenses=expenses, incomes=incomes, bills=bills)
 
 
-@ app.route("/budget", methods=["GET", "POST"])
+@ app.route("/budget_day", methods=["GET", "POST"])
 @ login_required
 def budget():
     """Complete monthly budget"""
+    id = session["user_id"]
 
-    return render_template("register.html")
+    if request.method == 'POST':
+
+        return render_template("budget_day.html")
+
+    else:
+
+        return render_template("budget_day.html")
 
 
-@ app.route("/net worth", methods=["GET", "POST"])
+@ app.route("/net_worth", methods=["GET", "POST"])
 @ login_required
 def net_worth():
     """Displays timeline of net worth"""
+    id = session["user_id"]
 
-    return render_template("register.html")
+    if request.method == 'POST':
+        for dsi, name, amount, rate in zip(request.form.getlist('dsi'),
+                                           request.form.getlist('name'),
+                                           request.form.getlist('amount'),
+                                           request.form.getlist('rate')):
+
+            if dsi and name and amount:
+                cursor.execute(
+                    """INSERT INTO dsi (id, dsi, name, amount, rate)
+                    VALUES (%s,%s,%s,%s,%s)""", (id, dsi, name, amount, rate))
+                conn.commit()
+        return render_template("net_worth.html")
+    else:
+        cursor.execute("""SELECT name, amount, rate FROM dsi
+        WHERE (id = %s) AND (dsi = %s)""", (id, "debt"))
+        debts = cursor.fetchall()
+
+        cursor.execute("""SELECT name, amount, rate FROM dsi
+        WHERE (id = %s) AND (dsi = %s)""", (id, "savings"))
+        savings = cursor.fetchall()
+
+        cursor.execute("""SELECT name, amount, rate FROM dsi
+        WHERE (id = %s) AND (dsi = %s)""", (id, "investment"))
+        investments = cursor.fetchall()
+
+        return render_template("net_worth.html", debts=debts, savings=savings, investments=investments)
 
 
 @ app.route("/goals", methods=["GET", "POST"])

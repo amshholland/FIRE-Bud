@@ -1,7 +1,7 @@
 import os
 import requests
 import urllib.parse
-
+from mysql.connector import apilevel
 from flask import redirect, render_template, request, session
 from functools import wraps
 
@@ -41,18 +41,18 @@ def lookup(symbol):
     # Contact API
     try:
         api_key = os.environ.get("API_KEY")
-        response = requests.get(f"https://cloud.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token=pk_d30b666299064daa83c55da659b91333")
+        response = requests.get(
+            f"https://cloud.iexapis.com/stable/stock/{urllib.parse.quote_plus(symbol)}/quote?token=pk_d30b666299064daa83c55da659b91333")
         response.raise_for_status()
     except requests.RequestException:
         return None
 
     # Parse response
     try:
-        quote = response.json()
+        budget = response.json()
         return {
-            "name": quote["companyName"],
-            "price": float(quote["latestPrice"]),
-            "symbol": quote["symbol"]
+            "category": budget["category"],
+            "amount": float(budget["amount"]),
         }
     except (KeyError, TypeError, ValueError):
         return None
