@@ -8,28 +8,27 @@ Customize Budget
 
 <h1 class="h1">Customize Your Budget</h1>
 
-<form method="POST" action="/customize">
-    {% if bud_day != null or bud_day != None or bud_day != 0 %}
-
-    <h2 class="h2">Your next budget day is on {{ bud_day }}</h2>
-
-    {% else %}
-
+<form method="POST" action="/add">
+    {% if bud_day == 0 %}
     <h2 class="h2">What day of the month do you want to budget?</h2>
-    <input name="day" placeholder="Day" type="text">
-
+    <input name="day" class="cat" placeholder="Day" type="text">
+    </p>
+    {% else %}
+    <h2 class="h2">Your next budget day is on {{ bud_day }}</h2>
     {% endif %}
+
     <div class="tbl_border">
         <div class="row align-items-start">
             <div class="col">
 
-                <h2 class="h2">Income</h2>
+                <h2>Income</h2>
 
                 <script>
                     // Dynamically add and remove rows
                     $(document).ready(function () {
                         // Variables
-                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="income" /><input type="text" name="category" id="childcategory" placeholder="Income Type" /><input type="text" name="amount" id="childamount" placeholder="Expected Amount" /><input type="date" name="in_date" id="childin_date" /><input type="button" id="in_remove" value="X" /></div>';
+                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="incomeBud" /><select class="cat" id="childcategory" name="category"><option select>Select Income</option>{% for row in income %}<option value="{{ row[0] }}">{{ row[0] }}</option>{% endfor %}</select><input type="text" class="currency" name="amount" id="childamount" placeholder="Expected Amount" /><input type="date" class="date" name="in_date" id="childin_date" /><input type="button" id="in_remove" value="x" /></div>';
+
                         // Add rows to form
                         $("#in_add").click(function () {
                             $("#income").append(newrow);
@@ -42,22 +41,29 @@ Customize Budget
                     });
                 </script>
 
-                <div id="income">
-                    <input type="hidden" name="ie" id="ie" value="income" />
-                    <input type="text" name="category" id="category" placeholder="Income Type" />
-                    <input type="text" name="amount" id="amount" placeholder="Expected Amount" />
-                    <input type="date" name="date" id="date" />
-                    <input type="button" id="in_add" value="Add" />
-                </div>
+                <table id="income">
+                    <tr>
+                        <input type="hidden" name="ie" id="ie" value="incomeBud" />
+                        <select class="cat" id="category" name="category">
+                            <option select>Select Income</option>
+                            {% for row in income %}
+                            <option value="{{ row[0] }}">{{ row[0] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" class="currency" name="amount" id="amount" placeholder="Expected Amount" />
+                        <input type="date" class="date" name="date" id="date" />
+                        <input type="button" id="in_add" value="+" />
+                    </tr>
+                </table>
             </div>
             <div class="col">
 
-                <h2 class="h2">Expenses</h2>
+                <h2>Life Expenses</h2>
                 <script>
                     // Dynamically add and remove category text boxes
                     $(document).ready(function () {
                         // Variables
-                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expense" /><input type="text" name="category" id="childcategory" placeholder="Expense Category" /><input type="text" name="amount" id="childamount" placeholder="Budget" /><input type="hidden" name="date" id="childdate" value="{{ bud_day }}" /><input type="button" id="ex_remove" value="X" /></div>';
+                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="expenseBud" /><select class="cat" id="childcategory" name="category"><option select>Select Expense</option>{% for row in expenses %}<option value="{{ row[0] }}">{{ row[0] }}</option>{% endfor %}</select><input type="text" class="currency" name="amount" id="childamount" placeholder="Budget" /><input type="hidden" name="date" id="childdate" value="{{ bud_day }}" /><input type="text" class="cat" name="note" id="childnote" placeholder="Note" /><input type="button" id="ex_remove" value="x" /></div>';
 
                         // Add rows to form
                         $("#ex_add").click(function () {
@@ -71,23 +77,31 @@ Customize Budget
                     });
                 </script>
 
-                <div id="expenses">
-                    <input type="hidden" name="ie" id="ie" value="expense" />
-                    <input type="text" name="category" id="category" placeholder="Expense Category" />
-                    <input type="text" name="amount" id="amount" placeholder="Budget" />
-                    <input type="hidden" name="date" id="date" value="{{ bud_day }}" />
-                    <input type="button" id="ex_add" value="Add" />
-                </div>
+                <table id="expenses">
+                    <tr>
+                        <input type="hidden" name="ie" id="ie" value="expenseBud" />
+                        <select class="cat" id="category" name="category">
+                            <option select>Select Expense</option>
+                            {% for row in expenses %}
+                            <option value="{{ row[0] }}">{{ row[0] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" class="currency" name="amount" id="amount" placeholder="Budget" />
+                        <input type="hidden" name="date" id="date" value="{{ bud_day }}" />
+                        <input type="text" class="cat" name="note" id="childnote" placeholder="Note" />
+                        <input type="button" id="ex_add" value="+" />
+                    </tr>
+                </table>
             </div>
 
             <div class="col">
-                <h2 class="h2">Monthly Bills</h2>
+                <h2>Bills</h2>
 
                 <script>
                     // Dynamically add and remove bills text boxes
                     $(document).ready(function () {
                         // Variables
-                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="bill" /><input type="text" name="category" id="childcategory" placeholder="Bill" /><input type="text" name="amount" id="childamount" placeholder="Estimated Bill Total" /><input type="date" name="date" id="childdate" placeholder="Payment Due" /><input type="button" id="bill_remove" value="X" /></div>';
+                        var newrow = '<p /><div><input type="hidden" name="ie" id="childie" value="billBud" /><select class="cat" id="childcategory" name="category"><option selected>Select Bill</option>{% for row in bills %}<option value="{{ row[0] }}">{{ row[0] }}</option>{% endfor %}</select><input type="text" class="currency" name="amount" id="childamount" placeholder="Estimated Bill Total" /><input type="date" class="date" name="date" id="childdate" placeholder="Payment Due" /><input type="button" id="bill_remove" value="x" /></div>';
 
                         // Add row to form
                         $("#bill_add").click(function () {
@@ -101,20 +115,26 @@ Customize Budget
                     });
                 </script>
 
-                <div id="bills">
-                    <input type="hidden" name="ie" id="ie" value="bill" />
-                    <input type="text" name="category" id="category" placeholder="Bill Name" />
-                    <input type="text" name="amount" id="amount" placeholder="Estimated Total" />
-                    <input type="date" name="date" id="date" placeholder="Payment Due" />
-                    <input type="button" id="bill_add" value="Add" />
-                </div>
+                <table id="bills">
+                    <tr>
+                        <input type="hidden" name="ie" id="ie" value="billBud" />
+                        <select id="category" class="cat" name="category">
+                            <option selected>Select Bill</option>
+                            {% for row in bills %}
+                            <option value="{{ row[0] }}">{{ row[0] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" class="currency" name="amount" id="amount" placeholder="Estimated Total" />
+                        <input type="date" class="date" name="date" id="date" placeholder="Payment Due" />
+                        <input type="button" id="bill_add" value="+" />
+                    </tr>
+                </table>
             </div>
         </div>
         </p>
     </div>
     </p>
     <input type="submit" id="submit" />
-
 </form>
 
 {% endblock %}

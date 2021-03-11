@@ -23,8 +23,8 @@ Debts, Savings, & Investments
                 {% for row in debts %}
                 <tr>
                     <td> {{ row[0] }} </td>
-                    <td> {{ row[1] }} </td>
-                    <td> {{ row[2] }} </td>
+                    <td> ${{ row[1] }} </td>
+                    <td> {{ row[2] }}% </td>
                 </tr>
                 {% endfor %}
             </table>
@@ -44,8 +44,8 @@ Debts, Savings, & Investments
                 {% for row in savings %}
                 <tr>
                     <td> {{ row[0] }} </td>
-                    <td> {{ row[1] }} </td>
-                    <td> {{ row[2] }} </td>
+                    <td> ${{ row[1] }} </td>
+                    <td> {{ row[2] }}% </td>
                 </tr>
                 {% endfor %}
             </table>
@@ -63,7 +63,7 @@ Debts, Savings, & Investments
                 {% for row in investments %}
                 <tr>
                     <td> {{ row[0] }} </td>
-                    <td> {{ row[1] }} </td>
+                    <td> ${{ row[1] }} </td>
                 </tr>
                 {% endfor %}
             </table>
@@ -72,14 +72,14 @@ Debts, Savings, & Investments
 </div>
 
 </p>
-<h2>Add to Debts, Savings, or Investments</h2>
+<h2>Add Account</h2>
 </p>
 <div>
     <script>
         // Dynamically add and remove rows
         $(document).ready(function () {
             // Variables
-            var newrow = '<p /><div><select id="dsi" name="childdsi"><option select>Type</option><option>Debt</option><option>Savings Account</option><option>Investment Account</option></select><input type="text" name="childname" id="name" placeholder="Account Name" /><input type="text" name="childamount" id="amount" placeholder="Amount" /><input type="text" name="childrate" id="rate" placeholder="Interest Rate" /><input type="button" id="remove" value="X" /></div>';
+            var newrow = '<p /><div><select class="cat" id="dsi" name="childdsi"><option select>Type</option><option>Debt</option><option>Savings Account</option><option>Investment Account</option></select><input type="text" name="childname" id="name" placeholder="Account Name" /><input type="text" name="childamount" id="amount" placeholder="Amount" /><input type="text" name="childrate" id="rate" placeholder="Interest Rate" /><input type="hidden" name="month" id="childmonth" value="{{ month }}" /><input type="button" id="remove" value="x" /></div>';
             // Add rows to form
             $("#add").click(function () {
                 $("#dsi_add").append(newrow);
@@ -95,16 +95,17 @@ Debts, Savings, & Investments
     <form method="POST" action="/net_worth">
         <div id="dsi_add" class="tbl_border">
             </p>
-            <select id="dsi" name="dsi">
+            <select class="cat" id="dsi" name="dsi">
                 <option select>Type</option>
                 <option>Debt</option>
-                <option>Savings Account</option>
-                <option>Investment Account</option>
+                <option>Savings</option>
+                <option>Investment</option>
             </select>
-            <input type="text" name="name" id="name" placeholder="Account Name" />
-            <input type="text" name="amount" id="amount" placeholder="Amount" />
-            <input type="text" name="rate" id="rate" placeholder="Interest Rate" />
-            <input type="button" id="add" value="Add" />
+            <input type="text" class="cat" name="name" id="name" placeholder="Account Name" />
+            <input type="text" class="currency" name="amount" id="amount" placeholder="Amount" />
+            <input type="text" class="rate" name="rate" id="rate" placeholder="Interest Rate" />
+            <input type="hidden" name="month" id="month" value="{{ month }}" />
+            <input type="button" id="add" value="+" />
             </p>
         </div>
         </p>
@@ -112,4 +113,63 @@ Debts, Savings, & Investments
     </form>
 </div>
 
+<!---linechart-->
+<script>
+    // Load the Visualization API and the piechart package.
+    google.charts.load('current', { packages: ['corechart', 'line'] });
+    // Set a callback to run when the Google Visualization API is loaded.
+    google.charts.setOnLoadCallback(drawLogScales);
+
+    // Callback that creates and populates a data table,
+    // instantiates the pie chart, passes in the data and
+    // draws it.
+    function drawLogScales() {        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Month');
+        data.addColumn('number', 'Debt');
+        data.addColumn('number', 'Savings');
+        data.addColumn('number', 'Investments');
+        data.addRows([
+            {% for month, debt, sav, inv in data %}
+    [new Date("{{ month }}"), parseFloat("{{ debt }}"), parseFloat("{{ sav }}"), parseFloat("{{ inv }}")],
+        {% endfor %}
+        ]);
+
+
+    // Set chart options
+    var options = {
+        title: 'Net Worth',
+        'width': 800,
+        'height': 600,
+        pointSize: 7,
+        pointShape: 'square',
+        hAxis: {
+            format: 'MMM yy',
+            title: 'Month'
+        },
+        vAxis: {
+            format: '$###,###,###',
+            title: 'Amount'
+        }
+    };
+
+    // Format currency within chart
+    var formatter = new google.visualization.NumberFormat({ groupingSymbol: ',', prefix: '$' });
+    formatter.format(data, 1);
+    formatter.format(data, 2);
+    formatter.format(data, 3);
+
+    // Format dates within chart
+    var formatter_date = new google.visualization.DateFormat({ formatType: 'medium' });
+    formatter_date.format(data, 0);
+
+    // Instantiate and draw our chart, passing in some options.
+    var chart = new google.visualization.LineChart(document.getElementById('line_div'));
+    chart.draw(data, options);
+    }
+
+</script>
+
+<!--Div that will hold the bar chart-->
+<div id="line_div" align="center"></div>
 {% endblock %}

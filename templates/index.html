@@ -1,45 +1,98 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Add Expenditures & Income
+Overview
 {% endblock %}
 
 {% block main %}
 
+<h1>Month's Overview</h1>
+
+</p>
+
+<h2>Income: {{ income }}</h2>
+<h2>Projected Expenses: {{ totalEx }}</h2>
+<h2>Remaining: {{ remaining }}</h2>
+
+
+
+<!--piechart-->
 <script>
     // Load the Visualization API and the piechart package.
     google.charts.load('current', { 'packages': ['corechart'] });
 
     // Set a callback to run when the Google Visualization API is loaded.
-    google.charts.setOnLoadCallback(drawChart);
+    google.charts.setOnLoadCallback(drawPie);
 
     // Callback that creates and populates a data table,
     // instantiates the pie chart, passes in the data and
     // draws it.
-    function drawChart() {
+    function drawPie() {
         // Create the data table.
         var data = new google.visualization.DataTable();
         data.addColumn('string', 'Category');
         data.addColumn('number', 'Amount');
         data.addRows([
             {% for category, amount in expenses %}
-    ["{{ category }}", parseInt("{{ amount }}")],
+    ["{{ category }}", parseFloat("{{ amount }}")],
+        {% endfor %}
+        ]);
+    // Set chart options
+    var options = {
+        'title': 'MTD Expense Allocation',
+        'width': 800,
+        'height': 600
+    };
+
+    // Format currency within chart
+    var formatter = new google.visualization.NumberFormat({ groupingSymbol: ',', prefix: '$' });
+    formatter.format(data, 1);
+
+    // Instantiate and draw our chart, passing in some options.
+    var chart = new google.visualization.PieChart(document.getElementById('pie_div'));
+    chart.draw(data, options);
+}
+</script>
+
+<!--barchart-->
+<script>
+    // Set a callback to run when the Google Visualization API is loaded.
+    google.charts.setOnLoadCallback(drawBar);
+    // Callback that creates and populates a data table,
+    // instantiates the bar chart, passes in the data and
+    // draws it.
+    function drawBar() {
+        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Category');
+        data.addColumn('number', 'Budgeted');
+        data.addColumn('number', 'Actual');
+        data.addRows([
+            {% for category, bud, actual in spend %}
+    ["{{ category }}", parseFloat("{{ bud }}"), parseFloat("{{ actual }}")],
         {% endfor %}
         ]);
     // Set chart options
     var options = {
         'title': 'MTD Expenses',
-        'width': 400,
-        'height': 300
+        'width': 800,
+        'height': 600,
+        'bars': 'horizontal'
     };
+    // Format currency within chart
+    var formatter = new google.visualization.NumberFormat({ groupingSymbol: ',', prefix: '$' });
+    formatter.format(data, 1);
+    formatter.format(data, 2);
 
     // Instantiate and draw our chart, passing in some options.
-    var chart = new google.visualization.PieChart(document.getElementById('chart_div'));
+    var chart = new google.visualization.BarChart(document.getElementById('bar_div'));
     chart.draw(data, options);
 }
 </script>
 
-
 <!--Div that will hold the pie chart-->
-<div id="chart_div" style="width:400; height:300"></div>
+<div id="pie_div" align="center"></div>
+<!--Div that will hold the bar chart-->
+<div id="bar_div" align="center"></div>
+
 {% endblock %}

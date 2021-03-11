@@ -53,32 +53,12 @@ except mysql.connector.Error as e:
     sys.exit(1)
 
 
-class CustomJsonEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Decimal):
-            return float(obj)
-        return super(CustomJsonEncoder, self).default(obj)
-
-
-@app.route('/')
-@ login_required
-def index():
-    """ Display MTD Budget Data"""
-    id = session["user_id"]
-    cursor.execute("""SELECT category, SUM(amount)
-    FROM budget WHERE id = %s AND ie = %s GROUP BY category""", (id, "expense"))
-    expenses = cursor.fetchall()
-
-    # Put the JS code and JSON string into the template.
-    return render_template("index.html", expenses=expenses)
-
-
 @ app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
 
     # Forget any user_id
-    # session.clear()
+    session.clear()
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
@@ -100,11 +80,29 @@ def login():
         if len(rows) != 1 or not check_password_hash(rows[0][2], request.form.get("password")):
             return apology("invalid username and/or password", 403)
 
-        # Remember which user has logged in
+        # Remember which user has logged in & their budget day
         session["user_id"] = rows[0][0]
+        bud_day = rows[0][3]
 
-        # Redirect user to home page
-        return redirect("/")
+        if not bud_day:
+            return render_template("customize.html", bud_day=0)
+
+        else:
+            today = datetime.date.today()
+
+            bud_day = datetime.date(today.year, today.month, bud_day)
+            bud_month = bud_day + relativedelta(days=+1)
+
+            if today < bud_day:
+                bud_month = bud_month - relativedelta(months=1)
+
+            session["bud_day"] = bud_day
+            session["bud_month"] = bud_month
+            print(bud_day)
+            print(bud_month)
+
+            # Redirect user to home page
+            return redirect("/")
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -160,96 +158,114 @@ def register():
                                     VALUES (%s, %s)""", (username, hash))
             conn.commit()
 
-        # Direct user to login page
-        return render_template("login.html")
+        # Direct user to customize page
+        return render_template("customize.html")
         # return render_template("login.html")
 
     else:
         return render_template("register.html")
 
 
-@ app.route("/customize", methods=["GET", "POST"])
+@app.route('/')
+@ login_required
+def index():
+    """ Display MTD Budget Data"""
+    id = session["user_id"]
+    bud_month = session["bud_month"]
+
+# AND bud_month = %s
+
+    cursor.execute("""select category,
+    sum(case when ie = 'expenseBud' then amount end) as bud,
+    sum(case when ie = 'expense' then amount end) as actual
+    from budget WHERE id = %s AND ie = %s OR ie = %s
+    group by category""", (id, 'expenseBud', 'expense'))
+    spend = cursor.fetchall()
+
+    select = "SELECT category, SUM(amount) FROM budget WHERE id = %s AND ie = %s GROUP BY category"
+
+    cursor.execute(select, (id, 'expenseBud'))
+    expenses = cursor.fetchall()
+
+    cursor.execute("""SELECT SUM(amount) FROM budget
+    WHERE id = %s AND ie = %s OR ie = %s""", (id, 'billBud', 'expenseBud'))
+    totalEx = float(cursor.fetchone()[0])
+
+    cursor.execute(
+        "SELECT SUM(amount) FROM budget WHERE id = %s AND ie = %s", (id, 'incomeBud'))
+    income = float(cursor.fetchone()[0])
+
+    remaining = income - totalEx
+
+    return render_template("index.html", expenses=expenses, spend=spend, income=usd(income), totalEx=usd(totalEx), remaining=usd(remaining))
+
+
+@ app.route("/add", methods=["POST"])
+@ login_required
+def add():
+
+    if request.method == "POST":
+
+        id = session["user_id"]
+        bud_month = session["bud_month"]
+
+        for ie, category, amount, date in zip(request.form.getlist('ie'),
+                                              request.form.getlist(
+                'category'),
+                request.form.getlist(
+                'amount'),
+                request.form.getlist(
+                'date')):
+            if category and amount and date:
+                cursor.execute("""INSERT INTO budget (id, ie, category, amount, date, bud_month)
+                    VALUES (%s,%s,%s,%s,%s,%s)""", (id, ie, category, amount, date, bud_month))
+                conn.commit()
+
+    return render_template("index.html")
+
+
+@ app.route("/customize")
 @ login_required
 def customize():
     """Customize budget"""
     id = session["user_id"]
+    bud_day = session["bud_day"]
+    print(bud_day)
+    bud_month = session["bud_month"]
 
-    today = datetime.date.today()
+    select = "SELECT category FROM budget WHERE (id = %s) AND (ie = %s) GROUP BY category"
 
-    cursor.execute("SELECT budget_day FROM users WHERE id = %s", (id,))
-    bud_day = cursor.fetchone()
-    bud_day = datetime.date(today.year, today.month, bud_day[0])
+    cursor.execute(select, (id, "expenseBud"))
+    expenses = cursor.fetchall()
 
-    if today > bud_day:
-        bud_day = bud_day + relativedelta(months=+1)
+    cursor.execute(select, (id, "incomeBud"))
+    income = cursor.fetchall()
 
-    if request.method == "POST":
-        # Insert form data into budget db
+    cursor.execute(select, (id, "billBud"))
+    bills = cursor.fetchall()
 
-        for ie, category, amount, date in zip(request.form.getlist('ie'),
-                                              request.form.getlist('category'),
-                                              request.form.getlist('amount'),
-                                              request.form.getlist('date')):
-            if category and amount and date:
-                cursor.execute("""INSERT INTO categories (id, ie, category, amount, date)
-                VALUES (%s,%s,%s,%s,%s)""", (id, ie, category, amount, date))
-                conn.commit()
-
-        return render_template("index.html")
-
-    else:
-        return render_template("customize.html", bud_day=bud_day)
+    return render_template("customize.html", bud_day=bud_day, expenses=expenses, income=income, bills=bills)
 
 
-@ app.route("/add", methods=["GET", "POST"])
+@ app.route("/transactions")
 @ login_required
-def add():
-    """Add to budget"""
+def transactions():
+    """Add transactions"""
+
     id = session["user_id"]
+    bud_day = session["bud_day"]
 
-    if request.method == "POST":
-        for ie, category, amount, date in zip(request.form.getlist('ie'),
-                                              request.form.getlist('category'),
-                                              request.form.getlist('amount'),
-                                              request.form.getlist('date')):
-            if category and amount and date:
-                cursor.execute("""INSERT INTO budget (id, ie, category, amount, date)
-                    VALUES (%s,%s,%s,%s,%s)""", (id, ie, category, amount, date))
-                conn.commit()
-        return render_template("index.html")
+    select = "SELECT category FROM budget WHERE (id = %s) AND (ie = %s) GROUP BY category"
+    cursor.execute(select, (id, "expenseBud"))
+    expenses = cursor.fetchall()
 
-    else:
+    cursor.execute(select, (id, "incomeBud"))
+    incomes = cursor.fetchall()
 
-        today = datetime.date.today()
+    cursor.execute(select, (id, "billBud"))
+    bills = cursor.fetchall()
 
-        cursor.execute(
-            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "expense"))
-        expenses = cursor.fetchall()
-
-        cursor.execute(
-            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "income"))
-        incomes = cursor.fetchall()
-
-        cursor.execute(
-            "SELECT category FROM categories WHERE (id = %s) AND (ie = %s)", (id, "bill"))
-        bills = cursor.fetchall()
-
-        return render_template("add.html", expenses=expenses, incomes=incomes, bills=bills)
-
-
-@ app.route("/budget_day", methods=["GET", "POST"])
-@ login_required
-def budget():
-    """Complete monthly budget"""
-    id = session["user_id"]
-
-    if request.method == 'POST':
-
-        return render_template("budget_day.html")
-
-    else:
-
-        return render_template("budget_day.html")
+    return render_template("transactions.html", bud_day=bud_day, expenses=expenses, incomes=incomes, bills=bills)
 
 
 @ app.route("/net_worth", methods=["GET", "POST"])
@@ -257,33 +273,51 @@ def budget():
 def net_worth():
     """Displays timeline of net worth"""
     id = session["user_id"]
+    bud_month = session["bud_month"]
 
     if request.method == 'POST':
         for dsi, name, amount, rate in zip(request.form.getlist('dsi'),
                                            request.form.getlist('name'),
-                                           request.form.getlist('amount'),
-                                           request.form.getlist('rate')):
-
+                                           request.form.getlist(
+                'amount'),
+                request.form.getlist('rate')):
             if dsi and name and amount:
                 cursor.execute(
-                    """INSERT INTO dsi (id, dsi, name, amount, rate)
-                    VALUES (%s,%s,%s,%s,%s)""", (id, dsi, name, amount, rate))
+                    """INSERT INTO dsi (id, dsi, name, amount, rate, month)
+                    VALUES (%s,%s,%s,%s,%s,%s)""", (id, dsi, name, amount, rate, bud_month))
                 conn.commit()
         return render_template("net_worth.html")
     else:
-        cursor.execute("""SELECT name, amount, rate FROM dsi
-        WHERE (id = %s) AND (dsi = %s)""", (id, "debt"))
+        cursor.execute("""SELECT SUM(amount) FROM budget
+        WHERE id = %s AND ie = %s OR ie = %s""", (id, 'bill', 'expense'))
+        totalEx = float(cursor.fetchone()[0])
+
+        cursor.execute(
+            "SELECT SUM(amount) FROM budget WHERE id = %s AND ie = %s", (id, 'income'))
+        income = float(cursor.fetchone()[0])
+
+        remaining = income - totalEx
+        print(remaining)
+
+        select = "SELECT name, amount, rate FROM dsi WHERE (id = %s) AND (dsi = %s) GROUP BY name"
+        cursor.execute(select, (id, "debt"))
         debts = cursor.fetchall()
 
-        cursor.execute("""SELECT name, amount, rate FROM dsi
-        WHERE (id = %s) AND (dsi = %s)""", (id, "savings"))
+        cursor.execute(select, (id, "savings"))
         savings = cursor.fetchall()
 
-        cursor.execute("""SELECT name, amount, rate FROM dsi
-        WHERE (id = %s) AND (dsi = %s)""", (id, "investment"))
+        cursor.execute(select, (id, "investment"))
         investments = cursor.fetchall()
 
-        return render_template("net_worth.html", debts=debts, savings=savings, investments=investments)
+        cursor.execute("""select month,
+        sum(case when dsi='debt' then amount end) as debt,
+        sum(case when dsi='savings' then amount end) as sav,
+        sum(case when dsi='investment' then amount end) as inv
+        from dsi WHERE id=%s
+        group by month""", (id,))
+        data = cursor.fetchall()
+
+        return render_template("net_worth.html", debts=debts, savings=savings, investments=investments, data=data)
 
 
 @ app.route("/goals", methods=["GET", "POST"])
