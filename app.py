@@ -1,14 +1,15 @@
 import gviz_api
-import json
 import datetime
 from decimal import Decimal
 from tempfile import mkdtemp
 import mysql.connector
 import pandas as pd
+import numpy as np
 from dateutil.relativedelta import relativedelta
+from itertools import islice
 
 
-from flask import (Flask, flash, jsonify, redirect, render_template, request,
+from flask import (Flask, flash, redirect, render_template, request,
                    session)
 from flask_session import Session
 from werkzeug.exceptions import (HTTPException, InternalServerError,
@@ -98,8 +99,6 @@ def login():
 
             session["bud_day"] = bud_day
             session["bud_month"] = bud_month
-            print(bud_day)
-            print(bud_month)
 
             # Redirect user to home page
             return redirect("/")
@@ -224,13 +223,47 @@ def add():
     return render_template("index.html")
 
 
+@ app.route("/import_csv", methods=["POST"])
+@ login_required
+def import_csv():
+    """Import transactions CSV file"""
+    id = session["user_id"]
+    bud_month = session["bud_month"]
+
+    if request.method == 'POST':
+
+        data = pd.read_csv(
+            request.files['file'], skiprows=0)
+        data.columns = ['account', 'ie',
+                        'category', 'amount', 'date', 'note']
+
+        data['amount'] = pd.to_numeric(data['amount'])
+        data = data.replace({np.nan: None})
+        print(data)
+        for i, row in islice(data.iterrows(), 1, None):
+            if row['account'] and row['ie'] and row['category'] and row['amount']:
+
+                insert = """INSERT INTO budget (id, account, ie, category, amount, date, bud_month, note)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"""
+                values = (id, row['account'], row['ie'], row['category'],
+                          row['amount'], row['date'], bud_month, row['note'])
+
+                cursor.execute(insert, values)
+                conn.commit()
+
+        # cursor.execute("""INSERT INTO budget (id, ie, category, amount, date, bud_month)
+        #   VALUES (%s,%s,%s,%s,%s,%s)""", (id, ie, category, amount, date, bud_month))
+        # conn.commit()
+
+    return render_template("index.html")
+
+
 @ app.route("/customize")
 @ login_required
 def customize():
     """Customize budget"""
     id = session["user_id"]
     bud_day = session["bud_day"]
-    print(bud_day)
     bud_month = session["bud_month"]
 
     select = "SELECT category FROM budget WHERE (id = %s) AND (ie = %s) GROUP BY category"
@@ -255,7 +288,9 @@ def transactions():
     id = session["user_id"]
     bud_day = session["bud_day"]
 
-    select = "SELECT category FROM budget WHERE (id = %s) AND (ie = %s) GROUP BY category"
+    select = """SELECT category FROM budget WHERE (id = %s)
+    AND (ie = %s) GROUP BY category"""
+
     cursor.execute(select, (id, "expenseBud"))
     expenses = cursor.fetchall()
 
